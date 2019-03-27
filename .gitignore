@@ -1,0 +1,3 @@
+auto_*.py
+run_*.py
+!run_summarization.py
