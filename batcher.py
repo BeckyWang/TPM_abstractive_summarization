@@ -78,6 +78,8 @@ class Example(object):
       self.word2topic_enc_len = len(self.word2topic_enc_input) # store the length of word2topic encoder
       if self.enc_len != self.word2topic_enc_len:
         print('Length of word2topic encoder is error!')
+        print(self.enc_len)
+        print(self.word2topic_enc_len)
 
     # Process the topic distribution
     if FLAGS.topic:
@@ -398,7 +400,7 @@ class Batcher(object):
   def fill_example_queue(self):
     """Reads data from file and processes into Examples which are then placed into the example queue."""
 
-    input_gen = self.text_generator(data.example_generator(self._data_path, self._single_pass))
+    input_gen = self.text_generator(data.example_generator(self._data_path, self._single_pass, FLAGS.rpc_mode))
 
     while True:
       try:
@@ -471,24 +473,28 @@ class Batcher(object):
     Args:
       example_generator: a generator of tf.Examples from file. See data.example_generator"""
     while True:
-      e = next(example_generator) # e is a tf.Example
-      try:
-        article_text = e.features.feature['article'].bytes_list.value[0].decode() # the article text was saved under the key 'article' in the data files
-        abstract_text = e.features.feature['abstract'].bytes_list.value[0].decode() # the abstract text was saved under the key 'abstract' in the data files
-        # the word2topic distribution was saved under the key 'word2topic' in the data files
-        if FLAGS.word2topic:
-          word2topic_dist = e.features.feature['word2topic'].bytes_list.value[0].decode()
-        else:
-          word2topic_dist = ''
-        # the topic distribution was saved under the key 'topicDistribution' in the data files
-        if FLAGS.topic or FLAGS.topic_aware:
-          topic_dist = e.features.feature['topicDistribution'].bytes_list.value[0].decode()
-        else:
-          topic_dist = ''
-      except ValueError:
-        tf.logging.error('Failed to get article or abstract from example')
-        continue
-      if len(article_text)==0: # See https://github.com/abisee/pointer-generator/issues/1
-        tf.logging.warning('Found an example with empty article text. Skipping it.')
+      if self._hps.mode == 'decode' and FLAGS.rpc_mode:
+        tokenized_article, text_id, word2topic_dist, topic_dist = next(example_generator)
+        yield (tokenized_article, "<s>%s</s>" % text_id, word2topic_dist, topic_dist)
       else:
-        yield (article_text, abstract_text, word2topic_dist, topic_dist)
+        e = next(example_generator) # e is a tf.Example
+        try:
+          article_text = e.features.feature['article'].bytes_list.value[0].decode() # the article text was saved under the key 'article' in the data files
+          abstract_text = e.features.feature['abstract'].bytes_list.value[0].decode() # the abstract text was saved under the key 'abstract' in the data files
+          # the word2topic distribution was saved under the key 'word2topic' in the data files
+          if FLAGS.word2topic:
+            word2topic_dist = e.features.feature['word2topic'].bytes_list.value[0].decode()
+          else:
+            word2topic_dist = ''
+          # the topic distribution was saved under the key 'topicDistribution' in the data files
+          if FLAGS.topic or FLAGS.topic_aware:
+            topic_dist = e.features.feature['topicDistribution'].bytes_list.value[0].decode()
+          else:
+            topic_dist = ''
+        except ValueError:
+          tf.logging.error('Failed to get article or abstract from example')
+          continue
+        if len(article_text)==0: # See https://github.com/abisee/pointer-generator/issues/1
+          tf.logging.warning('Found an example with empty article text. Skipping it.')
+        else:
+          yield (article_text, abstract_text, word2topic_dist, topic_dist)

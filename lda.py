@@ -76,3 +76,61 @@ def cal_similarity(s1, s2):
   except ValueError:
     sim=0
   return sim
+
+
+def get_dist_from_lda(article, beta):
+  """ Get the topic distribution for the given document. 
+  Args:
+    article: String, original document
+    beta
+  Returns:
+    tokenized_article
+    topic_dist_str
+    word2topic_dist_str
+  """
+  tokenized_article = jieba.cut(article)
+  tokenized_article_str = ' '.join(tokenized_article)
+  processed_article = [w for w in tokenized_article_str.split() if w not in stopwords]
+  doc2bow = dictionary.doc2bow(processed_article)
+  doc_topic = ldamodel.get_document_topics(doc2bow, minimum_probability=0, minimum_phi_value=None, per_word_topics=True)
+  # Topic distribution for the whole document.
+  topic_distribution = doc_topic[0]
+  # Most probable topics per word. Each element in the list is a pair of a word’s id, and a list of topics sorted by their relevance to this word. 
+  word_topics = doc_topic[2]
+  word_topics_pair = {} #Change to dictionary
+  for item in word_topics:
+    word_topics_pair[item[0]] = item[1]
+  topic_word_ids = word_topics_pair.keys()
+
+  # Get the most relative topic
+  topic_distribution_sorted = sorted(topic_distribution, key = lambda k:k[1], reverse = True)
+  most_relative_topic = []
+  sum_prob = float(0)
+  for topic in topic_distribution_sorted:
+    most_relative_topic.append(topic)
+    sum_prob += topic[1]
+    if sum_prob > beta:
+      break
+  top_topic_ids = [t[0] for t in most_relative_topic]
+  top_topic = [str(t[0])+'-'+str(t[1]) for t in most_relative_topic]
+
+  # Get word_to_topic_relevance_value
+  word2topic_str = []
+  article_ids = dictionary.doc2idx(tokenized_article_str.split())
+  for idx in article_ids:
+    if idx in topic_word_ids:
+      item = word_topics_pair[idx]
+      topic_and_phi = [float(0)]*FLAGS.num_topic
+      for t in item:
+        topic_id = t[0]
+        if topic_id in top_topic_ids:
+          topic_and_phi[topic_id] = t[1]
+      topic_and_phi = [str(val) for val in topic_and_phi]
+      word2topic_str.append('/'.join(topic_and_phi))
+    else:
+      word2topic_str.append('[stopwords]')
+
+  if len(word2topic_str) != len(article_ids):
+    print('length error!')
+
+  return tokenized_article_str, '/'.join(top_topic), ' '.join(word2topic_str)

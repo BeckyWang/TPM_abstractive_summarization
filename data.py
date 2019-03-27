@@ -16,11 +16,13 @@
 
 """This file contains code to read the train/eval/test data from file and process it, and read the vocab data from file and process it"""
 
+import json
 import glob
 import random
 import struct
 import csv
 from tensorflow.core.example import example_pb2
+from lda import get_dist_from_lda
 
 # <s> and </s> are used in the data files to segment the abstracts into sentences. They don't receive vocab ids.
 SENTENCE_START = '<s>'
@@ -105,7 +107,7 @@ class Vocab(object):
         writer.writerow({"word": self._id_to_word[i]})
 
 
-def example_generator(data_path, single_pass):
+def example_generator(data_path, single_pass, rpc_mode):
   """Generates tf.Examples from data files.
 
     Binary data format: <length><blob>. <length> represents the byte size
@@ -121,24 +123,44 @@ def example_generator(data_path, single_pass):
   Yields:
     Deserialized tf.Example.
   """
-  while True:
-    filelist = glob.glob(data_path) # get the list of datafiles
-    assert filelist, ('Error: Empty filelist at %s' % data_path) # check filelist isn't empty
-    if single_pass:
-      filelist = sorted(filelist)
-    else:
-      random.shuffle(filelist)
-    for f in filelist:
-      reader = open(f, 'rb')
-      while True:
-        len_bytes = reader.read(8)
-        if not len_bytes: break # finished reading this file
-        str_len = struct.unpack('q', len_bytes)[0]
-        example_str = struct.unpack('%ds' % str_len, reader.read(str_len))[0]
-        yield example_pb2.Example.FromString(example_str)
-    if single_pass:
-      print("example_generator completed reading all datafiles. No more data.")
-      break
+  if rpc_mode:
+    """every line in the file should like:
+    {"id": "__id__", text: "__article__"}
+    Yields:
+      Deserialized tf.Example.
+    """
+    with open(data_path, "r", encoding='utf-8') as f:
+      for line in f:
+        text_id = 'None'
+        text = 'xxx'
+        line = line.strip()
+        if line:
+          result = json.loads(line)
+          if "id" in result:
+            text_id = result["id"] 
+          if "text" in result and len(result["text"]) > 0:
+            text = result["text"]
+        tokenized_article, topic_dist, word2topic_dist = get_dist_from_lda(text, 0.9)
+        yield (tokenized_article, text_id, word2topic_dist, topic_dist)
+  else:
+    while True:
+      filelist = glob.glob(data_path) # get the list of datafiles
+      assert filelist, ('Error: Empty filelist at %s' % data_path) # check filelist isn't empty
+      if single_pass:
+        filelist = sorted(filelist)
+      else:
+        random.shuffle(filelist)
+      for f in filelist:
+        reader = open(f, 'rb')
+        while True:
+          len_bytes = reader.read(8)
+          if not len_bytes: break # finished reading this file
+          str_len = struct.unpack('q', len_bytes)[0]
+          example_str = struct.unpack('%ds' % str_len, reader.read(str_len))[0]
+          yield example_pb2.Example.FromString(example_str)
+      if single_pass:
+        print("example_generator completed reading all datafiles. No more data.")
+        break
 
 
 def article2ids(article_words, vocab):

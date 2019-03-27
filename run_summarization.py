@@ -32,16 +32,16 @@ from tensorflow.python import debug as tf_debug
 FLAGS = tf.app.flags.FLAGS
 
 # Where to find data
-tf.app.flags.DEFINE_string('data_path', './finished_files/chunked/train_*', 'Path expression to tf.Example datafiles. Can include wildcards to access multiple datafiles.')
-tf.app.flags.DEFINE_string('vocab_path', './finished_files/vocab', 'Path expression to text vocabulary file.')
-tf.app.flags.DEFINE_string('model_path', 'train', 'Path expression to reference file.')
+tf.app.flags.DEFINE_string('data_path', '/data/topic-aware-pointer-model/rpc_log/tmp_input.txt', 'Path expression to tf.Example datafiles. Can include wildcards to access multiple datafiles.')
+tf.app.flags.DEFINE_string('vocab_path', '/data/topic-aware-pointer-model/model/finished_files/vocab', 'Path expression to text vocabulary file.')
 
 # Important settings
-tf.app.flags.DEFINE_string('mode', 'train', 'must be one of train/eval/decode')
-tf.app.flags.DEFINE_boolean('single_pass', False, 'For decode mode only. If True, run eval on the full dataset using a fixed checkpoint, i.e. take the current checkpoint, and use it to produce one summary for each example in the dataset, write the summaries to file and then get ROUGE scores for the whole dataset. If False (default), run concurrent decoding, i.e. repeatedly load latest checkpoint, use it to produce summaries for randomly-chosen examples and log the results to screen, indefinitely.')
+tf.app.flags.DEFINE_string('mode', 'decode', 'must be one of train/eval/decode')
+tf.app.flags.DEFINE_boolean('single_pass', True, 'For decode mode only. If True, run eval on the full dataset using a fixed checkpoint, i.e. take the current checkpoint, and use it to produce one summary for each example in the dataset, write the summaries to file and then get ROUGE scores for the whole dataset. If False (default), run concurrent decoding, i.e. repeatedly load latest checkpoint, use it to produce summaries for randomly-chosen examples and log the results to screen, indefinitely.')
+tf.app.flags.DEFINE_boolean('rpc_mode', True, 'If True, do not calculate rouge score. only for chinese, only for special format data_path')
 
 # Where to save output
-tf.app.flags.DEFINE_string('log_root', './model_log', 'Root directory for all logging.')
+tf.app.flags.DEFINE_string('log_root', '/data/topic-aware-pointer-model/model/model_log', 'Root directory for all logging.')
 tf.app.flags.DEFINE_string('exp_name', 'word2topic', 'Name for experiment. Logs will be saved in a directory with this name, under log_root.')
 
 #iteration number
@@ -70,7 +70,7 @@ tf.app.flags.DEFINE_float('max_grad_norm', 2.0, 'for gradient clipping')
 tf.app.flags.DEFINE_boolean('pointer_gen', True, 'If True, use pointer-generator model. If False, use baseline model.')
 
 # Topic info
-tf.app.flags.DEFINE_integer('num_topic', 320, 'topic number of pre-trained lda model')
+tf.app.flags.DEFINE_integer('num_topic', 65, 'topic number of pre-trained lda model')
 tf.app.flags.DEFINE_boolean('word2topic', True, 'If True, add the word2topic info to model (attention mechanism).')
 tf.app.flags.DEFINE_boolean('topic', False, 'If True, add the topic info to model.')
 
@@ -79,7 +79,7 @@ tf.app.flags.DEFINE_boolean('topic_aware', False, 'If True, use topic_aware mech
 tf.app.flags.DEFINE_float('topic_loss_wt', 0.2, 'Weight of topic_aware loss (Mu in the paper). If zero, then no incentive to minimize topic_aware loss.')
 
 # Coverage hyperparameters
-tf.app.flags.DEFINE_boolean('coverage', False, 'Use coverage mechanism. Note, the experiments reported in the ACL paper train WITHOUT coverage until converged, and then train for a short phase WITH coverage afterwards. i.e. to reproduce the results in the ACL paper, turn this off for most of training then turn on for a short phase at the end.')
+tf.app.flags.DEFINE_boolean('coverage', True, 'Use coverage mechanism. Note, the experiments reported in the ACL paper train WITHOUT coverage until converged, and then train for a short phase WITH coverage afterwards. i.e. to reproduce the results in the ACL paper, turn this off for most of training then turn on for a short phase at the end.')
 tf.app.flags.DEFINE_float('cov_loss_wt', 0.8, 'Weight of coverage loss (lambda in the paper). If zero, then no incentive to minimize coverage loss.')
 
 # Utility flags, for restoring and changing checkpoints
