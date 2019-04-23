@@ -23,6 +23,7 @@ import struct
 import csv
 from tensorflow.core.example import example_pb2
 from lda import get_dist_from_lda
+import re
 
 # <s> and </s> are used in the data files to segment the abstracts into sentences. They don't receive vocab ids.
 SENTENCE_START = '<s>'
@@ -139,8 +140,11 @@ def example_generator(data_path, single_pass, rpc_mode):
           if "id" in result:
             text_id = result["id"] 
           if "text" in result and len(result["text"]) > 0:
-            text = result["text"]
+            text = re.sub(r'\s', '', result["text"]) #delete empty charc in string
         tokenized_article, topic_dist, word2topic_dist = get_dist_from_lda(text, 0.9)
+        if len(word2topic_dist.split()) != len(tokenized_article.split()):
+          print('length error!')
+          print(text_id)
         yield (tokenized_article, text_id, word2topic_dist, topic_dist)
   else:
     while True:

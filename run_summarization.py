@@ -42,7 +42,7 @@ tf.app.flags.DEFINE_boolean('rpc_mode', True, 'If True, do not calculate rouge s
 
 # Where to save output
 tf.app.flags.DEFINE_string('log_root', '/data/topic-aware-pointer-model/model/model_log', 'Root directory for all logging.')
-tf.app.flags.DEFINE_string('exp_name', 'word2topic', 'Name for experiment. Logs will be saved in a directory with this name, under log_root.')
+tf.app.flags.DEFINE_string('exp_name', 'all_toic_loss_2', 'Name for experiment. Logs will be saved in a directory with this name, under log_root.')
 
 #iteration number
 tf.app.flags.DEFINE_integer('iter_num', 108500, 'iteration number of training')
@@ -72,10 +72,10 @@ tf.app.flags.DEFINE_boolean('pointer_gen', True, 'If True, use pointer-generator
 # Topic info
 tf.app.flags.DEFINE_integer('num_topic', 65, 'topic number of pre-trained lda model')
 tf.app.flags.DEFINE_boolean('word2topic', True, 'If True, add the word2topic info to model (attention mechanism).')
-tf.app.flags.DEFINE_boolean('topic', False, 'If True, add the topic info to model.')
+tf.app.flags.DEFINE_boolean('topic', True, 'If True, add the topic info to model.')
 
 # Topic_aware hyperparameters
-tf.app.flags.DEFINE_boolean('topic_aware', False, 'If True, use topic_aware mechanism, and turn on for training stage.')
+tf.app.flags.DEFINE_boolean('topic_aware', True, 'If True, use topic_aware mechanism, and turn on for training stage.')
 tf.app.flags.DEFINE_float('topic_loss_wt', 0.2, 'Weight of topic_aware loss (Mu in the paper). If zero, then no incentive to minimize topic_aware loss.')
 
 # Coverage hyperparameters

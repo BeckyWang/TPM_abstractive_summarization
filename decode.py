@@ -133,6 +133,10 @@ class BeamSearchDecoder(object):
       decoded_output = ' '.join(decoded_words) # single string
 
       if FLAGS.rpc_mode:
+        if decoded_words[0] == '目标':
+          decoded_words = decoded_words[1:]
+          if decoded_words[0] == '：':
+            decoded_words = decoded_words[1:]
         rpc_result.append({"id": original_abstract_sents[0], "summarization": ''.join(decoded_words)})
         counter += 1
         tf.logging.info("We\'ve been decoded %i articles.", counter)

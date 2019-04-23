@@ -130,7 +130,4 @@ def get_dist_from_lda(article, beta):
     else:
       word2topic_str.append('[stopwords]')
 
-  if len(word2topic_str) != len(article_ids):
-    print('length error!')
-
   return tokenized_article_str, '/'.join(top_topic), ' '.join(word2topic_str)
