@@ -1,3 +1,4 @@
 auto_*.py
 run_*.py
 !run_summarization.py
+thrift_server_8082.py
